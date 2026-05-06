@@ -1,0 +1,78 @@
+{
+  "onoff": {
+    "capability": "onoff",
+    "stateTopic": "zigbee2mqtt/0xa4c138f77a732521",
+    "setTopic": "zigbee2mqtt/0xa4c138f77a732521/plug_1/set",
+    "valueTemplate": "$.state_plug_1",
+    "outputTemplate": "",
+    "displayName": "Left Socket"
+  },
+  "onoff.1": {
+    "capability": "onoff",
+    "stateTopic": "zigbee2mqtt/0xa4c138f77a732521",
+    "setTopic": "zigbee2mqtt/0xa4c138f77a732521/plug_2/set",
+    "valueTemplate": "$.state_plug_2",
+    "outputTemplate": "",
+    "displayName": "Right Socket"
+  },
+  "onoff.2": {
+    "capability": "onoff",
+    "stateTopic": "zigbee2mqtt/0xa4c138f77a732521",
+    "setTopic": "zigbee2mqtt/0xa4c138f77a732521/usb_a/set",
+    "valueTemplate": "$.state_usb_a",
+    "outputTemplate": "",
+    "displayName": "USB A"
+  },
+  "onoff.3": {
+    "capability": "onoff",
+    "stateTopic": "zigbee2mqtt/0xa4c138f77a732521",
+    "setTopic": "zigbee2mqtt/0xa4c138f77a732521/usb_c/set",
+    "valueTemplate": "$.state_usb_c",
+    "outputTemplate": "",
+    "displayName": "USB C"
+  },
+  "onoff.4": {
+    "capability": "onoff",
+    "stateTopic": "zigbee2mqtt/0xa4c138f77a732521",
+    "setTopic": "zigbee2mqtt/0xa4c138f77a732521/set/switch_backlight",
+    "valueTemplate": "$.switch_backlight",
+    "outputTemplate": "",
+    "displayName": "Backlight"
+  },
+  "locked": {
+    "capability": "locked",
+    "stateTopic": "zigbee2mqtt/0xa4c138f77a732521",
+    "setTopic": "zigbee2mqtt/0xa4c138f77a732521/set/child_lock",
+    "valueTemplate": "(data) => data.child_lock === 'LOCK'",
+    "outputTemplate": "LOCK|UNLOCK",
+    "displayName": "Child Lock"
+  },
+  "measure_power": {
+    "capability": "measure_power",
+    "stateTopic": "zigbee2mqtt/0xa4c138f77a732521",
+    "valueTemplate": "$.power"
+  },
+  "meter_power": {
+    "capability": "meter_power",
+    "stateTopic": "zigbee2mqtt/0xa4c138f77a732521",
+    "valueTemplate": "$.produced_energy"
+  },
+  "measure_current": {
+    "capability": "measure_current",
+    "stateTopic": "zigbee2mqtt/0xa4c138f77a732521",
+    "valueTemplate": "$.current"
+  },
+  "measure_voltage": {
+    "capability": "measure_voltage",
+    "stateTopic": "zigbee2mqtt/0xa4c138f77a732521",
+    "valueTemplate": "$.voltage"
+  },
+  "measure_number": {
+    "capability": "measure_number",
+    "stateTopic": "zigbee2mqtt/0xa4c138f77a732521",
+    "setTopic": "",
+    "valueTemplate": "$.linkquality",
+    "outputTemplate": "",
+    "displayName": "Link Quality"
+  }
+}

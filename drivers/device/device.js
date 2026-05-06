@@ -15,12 +15,12 @@ const HomeyLib = require('homey-lib');
 const CAPABILITIES = Object.assign({}, HomeyLib.getCapabilities(), Homey.manifest.capabilities);
 //const DEVICE_CLASSES = HomeyLib.getDeviceClasses();
 
-const  { create, all } = require('mathjs')
+const { create, all } = require('mathjs')
 const math = create(all);
 math.import({
     equal: (a, b) => a === b
-  },
-  { override: true }
+},
+    { override: true }
 )
 
 const STATIC = {
@@ -30,32 +30,32 @@ const STATIC = {
 
 class MQTTDevice extends Homey.Device {
 
-	async onInit() {
+    async onInit() {
         this.log('Initializing MQTT Device...');
 
         this.compiled = new Map();
         this.mqttValues = new Map();
         this.id = this.getData().id;
 
-        this.onSettings({oldSettings:null, newSettings:super.getSettings(), changedKeys:[]});
+        this.onSettings({ oldSettings: null, newSettings: super.getSettings(), changedKeys: [] });
         // update settings from device attributes
-        try{
-            this.setSettings({class: this.getClass()});
+        try {
+            this.setSettings({ class: this.getClass() });
             let energy = this.getEnergy() || {};
             let settings = {};
-            if (energy["homeBattery"] != undefined && energy["homeBattery"] == true){
+            if (energy["homeBattery"] != undefined && energy["homeBattery"] == true) {
                 settings["set_energy_type"] = 'homeBattery';
             }
-            else if (energy["evCharger"] != undefined && energy["evCharger"] == true){
+            else if (energy["evCharger"] != undefined && energy["evCharger"] == true) {
                 settings["set_energy_type"] = 'evCharger';
             }
-            else if (energy["electricCar"] != undefined && energy["electricCar"] == true){
+            else if (energy["electricCar"] != undefined && energy["electricCar"] == true) {
                 settings["set_energy_type"] = 'electricCar';
             }
-            else{
+            else {
                 settings["set_energy_type"] = '';
             }
-            settings["set_energy_cumulative"] =  energy["cumulative"] != undefined ? energy["cumulative"] : false;
+            settings["set_energy_cumulative"] = energy["cumulative"] != undefined ? energy["cumulative"] : false;
             // settings["set_energy_home_battery"] = energy["homeBattery"] != undefined ? energy["homeBattery"] : false;
             settings["set_energy_cumulative_imported_capability"] = energy["cumulativeImportedCapability"] != undefined ? energy["cumulativeImportedCapability"] : "";
             settings["set_energy_cumulative_exported_capability"] = energy["cumulativeExportedCapability"] != undefined ? energy["cumulativeExportedCapability"] : "";
@@ -63,8 +63,8 @@ class MQTTDevice extends Homey.Device {
             settings["set_energy_meter_power_exported_capability"] = energy["meterPowerExportedCapability"] != undefined ? energy["meterPowerExportedCapability"] : "";
             await this.setSettings(settings);
         }
-        catch(error){
-            this.error("Error updating device energy settings: "+error.message);
+        catch (error) {
+            this.error("Error updating device energy settings: " + error.message);
         }
 
         this.thisDeviceChanged = this.homey.flow.getDeviceTriggerCard('change');
@@ -74,11 +74,11 @@ class MQTTDevice extends Homey.Device {
         await this.subscribeToTopics();
 
         this.registerDeviceChanges();
-       
+
         this.log('MQTTDevice is initialized');
     }
 
-    async onSettings({oldSettings, newSettings, changedKeys}) {
+    async onSettings({ oldSettings, newSettings, changedKeys }) {
         const settings = newSettings || {};
 
         this.log("Read settings:");
@@ -101,7 +101,7 @@ class MQTTDevice extends Homey.Device {
                 this.initTopics();
                 await this.subscribeToTopics();
                 await this.broadcast();
-            } catch(e) {
+            } catch (e) {
                 // probably invalid JSON
                 this.log("failed to update MQTT Device topics", e);
                 this.restoreSettingsTopics(JSON.parse(JSON.stringify(settings)));
@@ -111,25 +111,25 @@ class MQTTDevice extends Homey.Device {
             this.initTopics();
         }
         // device class
-        if (changedKeys.indexOf('class') > -1){
+        if (changedKeys.indexOf('class') > -1) {
             let deviceClass = newSettings['class'];
-            if (deviceClass != undefined && deviceClass != "" && deviceClass != this.getClass()){
+            if (deviceClass != undefined && deviceClass != "" && deviceClass != this.getClass()) {
                 await this.setClass(deviceClass);
-                this.log("onSettings(): Device class changed to: "+deviceClass);
-            } 
+                this.log("onSettings(): Device class changed to: " + deviceClass);
+            }
         }
         // Energy settings
-        if (changedKeys.indexOf('set_energy_cumulative') > -1){
-            if (newSettings['set_energy_cumulative']){
+        if (changedKeys.indexOf('set_energy_cumulative') > -1) {
+            if (newSettings['set_energy_cumulative']) {
                 this.log("onSettings(): set_energy_cumulative SET");
                 await this._setEnergyCumulative(true);
             }
-            else{
+            else {
                 this.log("onSettings(): set_energy_cumulative UNSET");
                 await this._setEnergyCumulative(false);
-            } 
+            }
         }
-        if (changedKeys.indexOf('set_energy_type') > -1){
+        if (changedKeys.indexOf('set_energy_type') > -1) {
             await this.setEnergyType(newSettings['set_energy_type']);
         }
         // if (changedKeys.indexOf('set_energy_home_battery') > -1){
@@ -142,27 +142,27 @@ class MQTTDevice extends Homey.Device {
         //         await this._setEnergyHomeBattery(false);
         //     } 
         // }
-        if (changedKeys.indexOf('set_energy_cumulative_imported_capability') > -1){
-            if (newSettings['set_energy_cumulative_imported_capability'] != undefined){
-                this.log("onSettings(): set_energy_cumulative_imported_capability: "+newSettings['set_energy_cumulative_imported_capability']);
+        if (changedKeys.indexOf('set_energy_cumulative_imported_capability') > -1) {
+            if (newSettings['set_energy_cumulative_imported_capability'] != undefined) {
+                this.log("onSettings(): set_energy_cumulative_imported_capability: " + newSettings['set_energy_cumulative_imported_capability']);
                 await this._setEnergyCumulativeImportedCapability(newSettings['set_energy_cumulative_imported_capability']);
             }
         }
-        if (changedKeys.indexOf('set_energy_cumulative_exported_capability') > -1){
-            if (newSettings['set_energy_cumulative_exported_capability'] != undefined){
-                this.log("onSettings(): set_energy_cumulative_exported_capability: "+newSettings['set_energy_cumulative_exported_capability']);
+        if (changedKeys.indexOf('set_energy_cumulative_exported_capability') > -1) {
+            if (newSettings['set_energy_cumulative_exported_capability'] != undefined) {
+                this.log("onSettings(): set_energy_cumulative_exported_capability: " + newSettings['set_energy_cumulative_exported_capability']);
                 await this._setEnergyCumulativeExportedCapability(newSettings['set_energy_cumulative_exported_capability']);
             }
         }
-        if (changedKeys.indexOf('set_energy_meter_power_imported_capability') > -1){
-            if (newSettings['set_energy_meter_power_imported_capability'] != undefined){
-                this.log("onSettings(): set_energy_meter_power_imported_capability: "+newSettings['set_energy_meter_power_imported_capability']);
+        if (changedKeys.indexOf('set_energy_meter_power_imported_capability') > -1) {
+            if (newSettings['set_energy_meter_power_imported_capability'] != undefined) {
+                this.log("onSettings(): set_energy_meter_power_imported_capability: " + newSettings['set_energy_meter_power_imported_capability']);
                 await this._setEnergyMeterPowerImportedCapability(newSettings['set_energy_meter_power_imported_capability']);
             }
         }
-        if (changedKeys.indexOf('set_energy_meter_power_exported_capability') > -1){
-            if (newSettings['set_energy_meter_power_exported_capability'] != undefined){
-                this.log("onSettings(): set_energy_meter_power_exported_capability: "+newSettings['set_energy_meter_power_exported_capability']);
+        if (changedKeys.indexOf('set_energy_meter_power_exported_capability') > -1) {
+            if (newSettings['set_energy_meter_power_exported_capability'] != undefined) {
+                this.log("onSettings(): set_energy_meter_power_exported_capability: " + newSettings['set_energy_meter_power_exported_capability']);
                 await this._setEnergyMeterPowerExportedCapability(newSettings['set_energy_meter_power_exported_capability']);
             }
         }
@@ -170,10 +170,10 @@ class MQTTDevice extends Homey.Device {
     }
 
     // Energy settings ================================================================================================
-    async _setEnergyCumulative(value = false){
+    async _setEnergyCumulative(value = false) {
         let energy = JSON.parse(JSON.stringify(this.getEnergy())) || {};
-        energy["cumulative"] =  value;
-        await this.setEnergy( energy );
+        energy["cumulative"] = value;
+        await this.setEnergy(energy);
     }
 
     // async _setEnergyHomeBattery(value = false){
@@ -182,82 +182,82 @@ class MQTTDevice extends Homey.Device {
     //     await this.setEnergy( energy );
     // }
 
-    async setEnergyType(type){
+    async setEnergyType(type) {
         let energy = JSON.parse(JSON.stringify(this.getEnergy())) || {};
-        switch (type){
+        switch (type) {
             case 'homeBattery':
-                energy["homeBattery"] =  true;
+                energy["homeBattery"] = true;
                 delete energy["evCharger"];
                 delete energy["electricCar"];
                 break;
             case 'evCharger':
                 delete energy["homeBattery"];
-                energy["evCharger"] =  true;
+                energy["evCharger"] = true;
                 delete energy["electricCar"];
                 break;
             case 'electricCar':
                 delete energy["homeBattery"];
                 delete energy["evCharger"];
-                energy["electricCar"] =  true;
+                energy["electricCar"] = true;
                 break;
             default:
                 delete energy["homeBattery"];
                 delete energy["evCharger"];
                 delete energy["electricCar"];
         }
-        await this.setEnergy( energy );
+        await this.setEnergy(energy);
     }
 
-    async _setEnergyCumulativeImportedCapability(value){
+    async _setEnergyCumulativeImportedCapability(value) {
         let energy = JSON.parse(JSON.stringify(this.getEnergy())) || {};
-        if (value == ''){
-            if (energy["cumulativeImportedCapability"]){
-                delete  energy["cumulativeImportedCapability"];
+        if (value == '') {
+            if (energy["cumulativeImportedCapability"]) {
+                delete energy["cumulativeImportedCapability"];
             }
         }
-        else{
-            energy["cumulativeImportedCapability"] =  value;
+        else {
+            energy["cumulativeImportedCapability"] = value;
         }
-        await this.setEnergy( energy );
+        await this.setEnergy(energy);
     }
 
-    async _setEnergyCumulativeExportedCapability(value){
+    async _setEnergyCumulativeExportedCapability(value) {
         let energy = JSON.parse(JSON.stringify(this.getEnergy())) || {};
-        if (value == ''){
-            if (energy["cumulativeExportedCapability"]){
+        if (value == '') {
+            if (energy["cumulativeExportedCapability"]) {
                 delete energy["cumulativeExportedCapability"];
             }
         }
-        else{
-            energy["cumulativeExportedCapability"] =  value;
+        else {
+            energy["cumulativeExportedCapability"] = value;
         }
-        await this.setEnergy( energy );
+        await this.setEnergy(energy);
     }
 
-    async _setEnergyMeterPowerImportedCapability(value){
+    async _setEnergyMeterPowerImportedCapability(value) {
         let energy = JSON.parse(JSON.stringify(this.getEnergy())) || {};
-        if (value == ''){
-            if (energy["meterPowerImportedCapability"]){
-                delete  energy["meterPowerImportedCapability"];
+        if (value == '') {
+            if (energy["meterPowerImportedCapability"]) {
+                delete energy["meterPowerImportedCapability"];
             }
         }
-        else{
-            energy["meterPowerImportedCapability"] =  value;
+        else {
+            energy["meterPowerImportedCapability"] = value;
         }
-        await this.setEnergy( energy );
+        await this.setEnergy(energy);
     }
 
-    async _setEnergyMeterPowerExportedCapability(value){
+    async _setEnergyMeterPowerExportedCapability(value) {
         let energy = JSON.parse(JSON.stringify(this.getEnergy())) || {};
-        if (value == ''){
-            if (energy["meterPowerExportedCapability"]){
+        if (value == '') {
+            if (energy["meterPowerExportedCapability"]) {
                 delete energy["meterPowerExportedCapability"];
             }
         }
-        else{
-            energy["meterPowerExportedCapability"] =  value;
+        else {
+            energy["meterPowerExportedCapability"] = value;
         }
-        await this.setEnergy( energy );
+        await this.setEnergy(energy);
     }
 
     /**
@@ -265,27 +265,27 @@ class MQTTDevice extends Homey.Device {
      */
     _compile() {
         this.compiled.clear();
-        if(this._capabilities && typeof this._capabilities === 'object') {
+        if (this._capabilities && typeof this._capabilities === 'object') {
             for (let capabilityId in this._capabilities) {
                 const config = this._capabilities[capabilityId];
-                if(config) {
-                    if(config.valueTemplate && !config.valueTemplate.startsWith('$') && !this.compiled.has(config.valueTemplate)) {
+                if (config) {
+                    if (config.valueTemplate && !config.valueTemplate.startsWith('$') && !this.compiled.has(config.valueTemplate)) {
                         try {
                             let compiled = math.compile(config.valueTemplate);
-                            if(compiled) {
+                            if (compiled) {
                                 this.compiled.set(config.valueTemplate, compiled);
                             }
-                        } catch(e) {
+                        } catch (e) {
                             this.log(e);
                         }
                     }
-                    if(config.outputTemplate && !config.outputTemplate.includes('{{') && !this.compiled.has(config.outputTemplate)) {
+                    if (config.outputTemplate && !config.outputTemplate.includes('{{') && !this.compiled.has(config.outputTemplate)) {
                         try {
                             let compiled = math.compile(config.outputTemplate);
-                            if(compiled) {
+                            if (compiled) {
                                 this.compiled.set(config.outputTemplate, compiled);
                             }
-                        } catch(e) {
+                        } catch (e) {
                             this.log(e);
                         }
                     }
@@ -297,12 +297,12 @@ class MQTTDevice extends Homey.Device {
     initTopics() {
         // Link state topics to capabilities
         this._topics = new Map();
-        if(this._capabilities && typeof this._capabilities === 'object') {
+        if (this._capabilities && typeof this._capabilities === 'object') {
             for (let capabilityId in this._capabilities) {
                 const stateTopic = this._capabilities[capabilityId].stateTopic;
                 if (stateTopic) {
                     let topics = this._topics.get(stateTopic) || [];
-                    if(!topics.includes(capabilityId)){
+                    if (!topics.includes(capabilityId)) {
                         topics.push(capabilityId);
                         this._topics.set(stateTopic, topics);
                     }
@@ -315,18 +315,18 @@ class MQTTDevice extends Homey.Device {
         const oldIds = new Set(this.getCapabilities());
         const newIds = new Set(Object.keys(capabilities));
 
-        for(let oldId of oldIds) {
-            if(!newIds.has(oldId)) {
+        for (let oldId of oldIds) {
+            if (!newIds.has(oldId)) {
                 await this.removeCapability(oldId);
             }
         }
 
         for (let newId of newIds) {
-            if(!oldIds.has(newId)) {
+            if (!oldIds.has(newId)) {
                 await this.addCapability(newId);
             }
             // add capability title as standard capabilityOption "title"
-            if (capabilities[newId]["displayName"]){
+            if (capabilities[newId]["displayName"]) {
                 capabilities[newId]["title"] = capabilities[newId]["displayName"];
             }
             await this.setCapabilityOptions(newId, capabilities[newId]);
@@ -335,7 +335,7 @@ class MQTTDevice extends Homey.Device {
 
     async broadcast() {
         const capabilities = this.getCapabilities();
-        for(let capabilityId of capabilities){
+        for (let capabilityId of capabilities) {
             const value = await this.getCapabilityValue(capabilityId);
             await this._publishMessage(capabilityId, value);
         }
@@ -356,7 +356,7 @@ class MQTTDevice extends Homey.Device {
         try {
             const capabilities = settings.topics ? JSON.parse(settings.topics) : null;
             this._capabilities = capabilities;
-        } catch(e) {
+        } catch (e) {
             this.log("Failed to restore settings topics");
         }
     }
@@ -383,7 +383,7 @@ class MQTTDevice extends Homey.Device {
             await this.mqttClient.connect();
         }
     }
-    
+
     async subscribeToTopics() {
         for (let topic of this._topics.keys()) {
             this.log('Subscribe to MQTT Device topic: ' + topic);
@@ -392,12 +392,12 @@ class MQTTDevice extends Homey.Device {
     }
 
     async unsubscribeFromTopics() {
-        if(this._topics) {
+        if (this._topics) {
             for (let topic of this._topics.keys()) {
                 this.log('Unsubscribe from MQTT Device topic: ' + topic);
                 try {
                     await this.mqttClient.unsubscribe(topic, this.id);
-                } catch(e) {
+                } catch (e) {
                     this.log("Failed to unsubscribe from MQTT Device topic", e);
                 }
             }
@@ -405,8 +405,7 @@ class MQTTDevice extends Homey.Device {
     }
 
     _parseMessageData(msg) {
-        switch(typeof msg)
-        {
+        switch (typeof msg) {
             case 'object':
                 return msg;
             case 'string':
@@ -431,29 +430,29 @@ class MQTTDevice extends Homey.Device {
             }
 
             // value template?
-            if(this._capabilities) {
+            if (this._capabilities) {
                 const config = this._capabilities[capabilityId];
-                if(config) {
+                if (config) {
                     let template = (config.valueTemplate || config.jsonPath || '').trim();
-                    if(template) {
+                    if (template) {
                         try {
                             const data = this._parseMessageData(message);
-                            
-                            if (template.includes('=>')){
+
+                            if (template.includes('=>')) {
                                 // 1) Try to parse template as JS function
-                                try{
+                                try {
                                     const converter = eval(template);
                                     message = converter(data);
                                 }
-                                catch(error){
+                                catch (error) {
                                     // Parse/execute error or thrown error in JS function
                                     this.log("Failed to parse & execute JS function: ", error.message);
                                     // do not update capability with default value
                                     return;
                                 }
                             }
-                            else{
-                                try{
+                            else {
+                                try {
                                     // If not possible, try MathJS or JSONpath
                                     const mathjs = this.compiled.get(template);
                                     const result = mathjs
@@ -461,25 +460,25 @@ class MQTTDevice extends Homey.Device {
                                         : jsonpath.query(data, template); // jsonPath
                                     message = Array.isArray(result) ? result[0] : result;
                                 }
-                                catch(error){
+                                catch (error) {
                                     this.log("Failed to evaluate JSON path or MathJS expression: ", error.message);
                                 }
                             }
-                        } catch(error) {
+                        } catch (error) {
                             this.log("Failed to parse message", error.message);
                         }
                     }
                 }
             }
 
-            if ( message == undefined ){
+            if (message == undefined) {
                 this.log("Failed to parse message. Value is undefined.");
                 return;
             }
 
             const value = parseValue(message, capability, this.percentageScale);
             const currentValue = await this.getCapabilityValue(capabilityId);
-            if(value !== currentValue) {
+            if (value !== currentValue) {
                 // keep track of values changed from an mqtt message on the state topic
                 this.mqttValues.set(capabilityId, value);
 
@@ -497,12 +496,12 @@ class MQTTDevice extends Homey.Device {
 
         try {
             const capabilityIds = this._topics.get(topic);
-            if (!capabilityIds || capabilityIds.length==0) return;
+            if (!capabilityIds || capabilityIds.length == 0) return;
 
             this.log('MQTTDevice.onMessage');
             this.log(topic + ': ' + (typeof message === 'object' ? JSON.stringify(message, null, 2) : message));
 
-            for(let capabilityId of capabilityIds) {
+            for (let capabilityId of capabilityIds) {
                 await this._updateCapabilityFromMessage(capabilityId, message);
             }
 
@@ -522,10 +521,10 @@ class MQTTDevice extends Homey.Device {
                 // Skip if the value was set by an mqtt messate on the state topic
                 const fromMqtt = this.mqttValues.has(capabilityId) && this.mqttValues.get(capabilityId) === value;
                 this.mqttValues.delete(capabilityId);
-                if(fromMqtt) {
+                if (fromMqtt) {
                     this.log("[SKIP] Value updated from mqtt (state topic), don't publish state change to set topic");
                     continue;
-                } 
+                }
 
                 // publish state on the 'set' topic
                 await this._publishMessage(capabilityId, value, capabilities);
@@ -535,8 +534,8 @@ class MQTTDevice extends Homey.Device {
         }, 500);
     }
 
-    async _publishMessage(capabilityId, value, capabilities){
-        if(!this._capabilities) {
+    async _publishMessage(capabilityId, value, capabilities) {
+        if (!this._capabilities) {
             this.log('No MQTT Device capabilities configured');
             return;
         }
@@ -551,32 +550,42 @@ class MQTTDevice extends Homey.Device {
             ? (config.outputTemplate ? value : formatOnOff(value, this.onOffValues))
             : formatValue(value, CAPABILITIES[capabilityId], this.percentageScale);
 
+        let processed = false;
+        if (config.outputTemplate && config.outputTemplate.includes('|') && !config.outputTemplate.includes('{{')) {
+            const parts = config.outputTemplate.split('|');
+            if (parts.length === 2) {
+                payload = value ? parts[0].trim() : parts[1].trim();
+                processed = true;
+            }
+            this.log(`MQTTDevice._publishMessage(): [${capabilityId}] payload: ${payload}`)
+        }
+
         // output template?
-        if(config.outputTemplate && config.outputTemplate.replace("{{", "").replace("}}", "").trim() !== 'value') {
+        if (!processed && config.outputTemplate && config.outputTemplate.replace("{{", "").replace("}}", "").trim() !== 'value') {
             const template = config.outputTemplate;
             try {
                 let state = this.getState() || {};
                 state.value = payload;
 
                 // 1) Try to parse template as JS function
-                try{
+                try {
                     const converter = eval(template);
                     payload = converter(value);
                 }
                 // If not possible, try MathJS or JSONpath
-                catch(error){
+                catch (error) {
                     const mathjs = this.compiled.get(template);
-                    if(mathjs) { // math?
+                    if (mathjs) { // math?
                         payload = mathjs.evaluate(state);
                     } else { // json-t
-                        if(!template.startsWith('{{') && (template.startsWith('{') || template.startsWith('['))) {
+                        if (!template.startsWith('{{') && (template.startsWith('{') || template.startsWith('['))) {
                             payload = jsontObject(template, state);
                         } else {
                             payload = jsontString(template, state);
                         }
                     }
-                }                
-            } catch(e) {
+                }
+            } catch (e) {
                 this.log("failed to format output message", e);
             }
         }
@@ -595,7 +604,7 @@ class MQTTDevice extends Homey.Device {
             capabilities = capabilities || this.getCapabilities();
             try {
                 await this.thisDeviceChanged.trigger(this, {}, capabilities);
-            } catch(e) {
+            } catch (e) {
                 this.error(e);
             }
         });
@@ -607,7 +616,7 @@ class MQTTDevice extends Homey.Device {
         };
         try {
             await this.someDeviceChanged.trigger(tokens);
-        } catch(e) {
+        } catch (e) {
             this.error(e);
         }
     }
@@ -623,7 +632,7 @@ class MQTTDevice extends Homey.Device {
 
             try {
                 await this.mqttClient.release(this.id);
-            } catch(e) {
+            } catch (e) {
                 this.log("Failed to relase subscribed topics for MQTT Device", e);
             }
         }
