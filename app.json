@@ -918,7 +918,7 @@
                   }
               },
               {
-                  "id": "energy_cumulative_include",
+                  "id": "_energy_cumulative_include",
                   "type": "checkbox",
                   "value": false,
                   "label": {
